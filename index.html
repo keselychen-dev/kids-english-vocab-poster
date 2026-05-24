@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>儿童英语识词小报生成器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#FFF9F0;--card:#fff;--accent:#FF8C42;--accent2:#4ECDC4;--accent3:#FF6B6B;--text:#2D3436;--text2:#636E72;--radius:16px;--shadow:0 4px 20px rgba(0,0,0,.08)}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.container{max-width:800px;margin:0 auto;padding:20px}
+h1{text-align:center;font-size:1.6em;margin:16px 0 8px;color:var(--accent)}
+.subtitle{text-align:center;color:var(--text2);font-size:.9em;margin-bottom:24px}
+.card{background:var(--card);border-radius:var(--radius);padding:24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.card-title{font-size:1.1em;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.step-badge{background:var(--accent);color:#fff;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.85em;font-weight:700}
+label{display:block;font-weight:600;margin-bottom:6px;font-size:.9em}
+input[type="text"],input[type="password"],textarea{width:100%;padding:10px 14px;border:2px solid #E8E8E8;border-radius:10px;font-size:.95em;transition:border-color .2s;outline:none}
+input:focus,textarea:focus{border-color:var(--accent)}
+.key-row{display:flex;gap:10px;margin-bottom:12px;align-items:end}
+.key-row>div{flex:1}
+.key-toggle{background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1em;padding:8px}
+.quick-themes{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}
+.quick-themes button{padding:6px 14px;border-radius:20px;border:2px solid #E8E8E8;background:#fff;cursor:pointer;font-size:.85em;transition:all .2s}
+.quick-themes button:hover,.quick-themes button.active{border-color:var(--accent);background:#FFF3E8;color:var(--accent)}
+.quick-themes button.batch-selected{border-color:var(--accent2);background:#E8FAF8;color:var(--accent2)}
+.model-select{display:flex;gap:12px;margin:12px 0;flex-wrap:wrap}
+.model-option{flex:1;min-width:100px;padding:14px;border-radius:12px;border:2px solid #E8E8E8;cursor:pointer;text-align:center;transition:all .2s;background:#fff}
+.model-option:hover{border-color:var(--accent2)}
+.model-option.active{border-color:var(--accent);background:#FFF3E8}
+.model-option .model-name{font-weight:700;font-size:.95em}
+.model-option .model-desc{font-size:.8em;color:var(--text2);margin-top:4px}
+.btn{padding:12px 28px;border:none;border-radius:10px;font-size:1em;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#E07830}
+.btn-secondary{background:var(--accent2);color:#fff}
+.btn-secondary:hover{background:#3DBDB4}
+.btn-outline{background:#fff;color:var(--accent);border:2px solid var(--accent)}
+.btn-outline:hover{background:#FFF3E8}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-row{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.loading{display:none;text-align:center;padding:20px;color:var(--text2)}
+.loading.show{display:block}
+.spinner{display:inline-block;width:24px;height:24px;border:3px solid #E8E8E8;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.vocab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:16px 0}
+.vocab-item{background:#F8F9FA;border-radius:10px;padding:12px;position:relative;border:2px solid transparent;transition:all .2s}
+.vocab-item:hover{border-color:var(--accent2)}
+.vocab-word{font-size:1.15em;font-weight:700;color:var(--accent);cursor:pointer}
+.vocab-word:hover{text-decoration:underline}
+.vocab-phonetic{font-size:.8em;color:var(--accent2);font-style:italic;margin-left:6px}
+.vocab-cn{font-size:.85em;color:var(--text2);margin:2px 0}
+.vocab-sentence{font-size:.85em;color:var(--accent2);font-style:italic;cursor:pointer}
+.vocab-sentence:hover{text-decoration:underline}
+.vocab-sentence-cn{font-size:.8em;color:var(--text2)}
+.vocab-speak-hint{font-size:.7em;color:var(--text2);margin-left:4px}
+.vocab-delete{position:absolute;top:8px;right:8px;background:none;border:none;cursor:pointer;color:#ccc;font-size:1.1em;line-height:1}
+.vocab-delete:hover{color:var(--accent3)}
+.result-img{width:100%;max-width:600px;border-radius:12px;box-shadow:var(--shadow);display:block;margin:16px auto}
+.progress-bar{width:100%;height:6px;background:#E8E8E8;border-radius:3px;margin:12px 0;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .3s;width:0}
+.hidden{display:none!important}
+.keys-toggle{cursor:pointer;color:var(--accent);font-size:.85em;text-decoration:underline;margin-bottom:12px;display:inline-block}
+.section-divider{border:none;border-top:1px dashed #E8E8E8;margin:20px 0}
+.caption-section{margin-top:24px;padding:20px;background:#FFF9F0;border-radius:12px}
+.caption-title{font-size:1.1em;font-weight:700;color:var(--accent);margin-bottom:12px;text-align:center}
+.caption-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.caption-item{background:#fff;border-radius:10px;padding:12px 14px;border-left:4px solid var(--accent2)}
+.caption-en{font-weight:700;font-size:1.05em;color:var(--accent);cursor:pointer}
+.caption-en:hover{text-decoration:underline}
+.caption-phonetic{font-size:.8em;color:var(--accent2);font-style:italic;margin-left:4px}
+.caption-cn{font-size:.85em;color:var(--text2);margin-bottom:4px}
+.caption-sentence{font-size:.9em;color:var(--accent2);margin-top:4px;cursor:pointer}
+.caption-sentence:hover{text-decoration:underline}
+.caption-sentence-cn{font-size:.82em;color:var(--text2);font-style:italic}
+.speak-hint{font-size:.65em;color:var(--text2);background:#F0F0F0;padding:1px 6px;border-radius:8px;margin-left:4px}
+.batch-queue{background:#F8F9FA;border-radius:10px;padding:14px;margin:12px 0}
+.batch-queue-title{font-weight:700;font-size:.9em;margin-bottom:8px;color:var(--accent)}
+.batch-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #E8E8E8;font-size:.85em}
+.batch-item:last-child{border:none}
+.batch-item .batch-status{font-size:.8em;padding:2px 8px;border-radius:8px;font-weight:600}
+.batch-status.pending{background:#FFF3E0;color:#FF8C42}
+.batch-status.generating{background:#E0F7FA;color:#00ACC1}
+.batch-status.done{background:#E8F5E9;color:#43A047}
+.batch-status.fail{background:#FFEBEE;color:#E53935}
+.batch-remove{background:none;border:none;cursor:pointer;color:#ccc;font-size:1em}
+.batch-remove:hover{color:var(--accent3)}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>儿童英语识词小报生成器</h1>
+  <p class="subtitle">输入主题，自动生成英语启蒙识词小报图片</p>
+
+  <!-- API Keys -->
+  <span class="keys-toggle" onclick="toggleKeys()">API Key 配置 ▾</span>
+  <div id="keysSection" class="card" style="display:none">
+    <div class="key-row">
+      <div>
+        <label>kie.ai API Key（图片生成）</label>
+        <input type="password" id="kieKey" placeholder="输入 kie.ai 的 API Key" autocomplete="off">
+      </div>
+      <button class="key-toggle" onclick="toggleVis('kieKey')">👁</button>
+    </div>
+    <div class="key-row">
+      <div>
+        <label>DeepSeek API Key（词汇生成）</label>
+        <input type="password" id="deepseekKey" placeholder="输入 DeepSeek 的 API Key" autocomplete="off">
+      </div>
+      <button class="key-toggle" onclick="toggleVis('deepseekKey')">👁</button>
+    </div>
+  </div>
+
+  <!-- Step 1: Input -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">1</span> 输入主题和标题</div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <label style="margin:0;white-space:nowrap">模式：</label>
+      <div class="model-select" style="margin:0;gap:8px">
+        <div class="model-option active" onclick="setMode(this,'single')" style="padding:8px 16px;min-width:auto">
+          <div class="model-name" style="font-size:.85em">单个生成</div>
+        </div>
+        <div class="model-option" onclick="setMode(this,'batch')" style="padding:8px 16px;min-width:auto">
+          <div class="model-name" style="font-size:.85em">批量生成</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="batchHint" class="hidden" style="background:#E0F7FA;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:.85em;color:#00838F">
+      批量模式：点击下方主题按钮添加到生成队列，可多选
+    </div>
+
+    <div class="quick-themes" id="quickThemes">
+      <div style="font-size:.82em;color:var(--text2);width:100%;margin-bottom:2px">动物自然</div>
+      <button onclick="handleThemeClick(this,'动物园','Fun at the Zoo')">动物园</button>
+      <button onclick="handleThemeClick(this,'农场','My Little Farm')">农场</button>
+      <button onclick="handleThemeClick(this,'海洋动物','Under the Sea')">海洋动物</button>
+      <button onclick="handleThemeClick(this,'昆虫世界','Little Bugs')">昆虫世界</button>
+      <button onclick="handleThemeClick(this,'宠物','My Lovely Pets')">宠物</button>
+      <button onclick="handleThemeClick(this,'恐龙','Dinosaur World')">恐龙</button>
+      <button onclick="handleThemeClick(this,'森林','Forest Friends')">森林</button>
+      <button onclick="handleThemeClick(this,'鸟类','Beautiful Birds')">鸟类</button>
+
+      <div style="font-size:.82em;color:var(--text2);width:100%;margin:10px 0 2px">食物饮品</div>
+      <button onclick="handleThemeClick(this,'水果','I Love Fruits')">水果</button>
+      <button onclick="handleThemeClick(this,'蔬菜','Yummy Veggies')">蔬菜</button>
+      <button onclick="handleThemeClick(this,'食物','Delicious Food')">食物</button>
+      <button onclick="handleThemeClick(this,'饮料','Drinks I Like')">饮料</button>
+      <button onclick="handleThemeClick(this,'零食','My Snacks')">零食</button>
+      <button onclick="handleThemeClick(this,'早餐','Good Morning Breakfast')">早餐</button>
+
+      <div style="font-size:.82em;color:var(--text2);width:100%;margin:10px 0 2px">日常生活</div>
+      <button onclick="handleThemeClick(this,'公园','My Happy Park')">公园</button>
+      <button onclick="handleThemeClick(this,'超市','Shopping Day')">超市</button>
+      <button onclick="handleThemeClick(this,'厨房','My Kitchen')">厨房</button>
+      <button onclick="handleThemeClick(this,'卧室','My Bedroom')">卧室</button>
+      <button onclick="handleThemeClick(this,'浴室','Bath Time')">浴室</button>
+      <button onclick="handleThemeClick(this,'我的家','My Sweet Home')">我的家</button>
+      <button onclick="handleThemeClick(this,'衣服','My Clothes')">衣服</button>
+      <button onclick="handleThemeClick(this,'玩具','My Toys')">玩具</button>
+
+      <div style="font-size:.82em;color:var(--text2);width:100%;margin:10px 0 2px">交通出行</div>
+      <button onclick="handleThemeClick(this,'交通工具','Go Go Go')">交通工具</button>
+      <button onclick="handleThemeClick(this,'机场','At the Airport')">机场</button>
+      <button onclick="handleThemeClick(this,'火车站','Train Station')">火车站</button>
+      <button onclick="handleThemeClick(this,'城市','My City')">城市</button>
+
+      <div style="font-size:.82em;color:var(--text2);width:100%;margin:10px 0 2px">人物身体</div>
+      <button onclick="handleThemeClick(this,'我的身体','My Body')">我的身体</button>
+      <button onclick="handleThemeClick(this,'我的家人','My Family')">我的家人</button>
+      <button onclick="handleThemeClick(this,'职业','What Do You Do')">职业</button>
+      <button onclick="handleThemeClick(this,'情绪','How Do You Feel')">情绪</button>
+      <button onclick="handleThemeClick(this,'动作','I Can Do It')">动作</button>
+
+      <div style="font-size:.82em;color:var(--text2);width:100%;margin:10px 0 2px">自然天气</div>
+      <button onclick="handleThemeClick(this,'颜色','Colorful World')">颜色</button>
+      <button onclick="handleThemeClick(this,'数字','Let\'s Count')">数字</button>
+      <button onclick="handleThemeClick(this,'形状','Fun Shapes')">形状</button>
+      <button onclick="handleThemeClick(this,'天气','Weather Today')">天气</button>
+      <button onclick="handleThemeClick(this,'季节','Four Seasons')">季节</button>
+      <button onclick="handleThemeClick(this,'海边','Fun at the Beach')">海边</button>
+      <button onclick="handleThemeClick(this,'花园','My Garden')">花园</button>
+      <button onclick="handleThemeClick(this,'太空','Space Adventure')">太空</button>
+
+      <div style="font-size:.82em;color:var(--text2);width:100%;margin:10px 0 2px">学校节日</div>
+      <button onclick="handleThemeClick(this,'学校','My School')">学校</button>
+      <button onclick="handleThemeClick(this,'文具','My School Bag')">文具</button>
+      <button onclick="handleThemeClick(this,'运动','Let\'s Play Sports')">运动</button>
+      <button onclick="handleThemeClick(this,'音乐','Music Time')">音乐</button>
+      <button onclick="handleThemeClick(this,'生日','Happy Birthday')">生日</button>
+      <button onclick="handleThemeClick(this,'圣诞节','Merry Christmas')">圣诞节</button>
+      <button onclick="handleThemeClick(this,'万圣节','Happy Halloween')">万圣节</button>
+      <button onclick="handleThemeClick(this,'新年','Happy New Year')">新年</button>
+    </div>
+
+    <label>主题 / 场景</label>
+    <input type="text" id="themeInput" placeholder="例如：动物园、水果、公园、交通工具……">
+    <br>
+    <label>小报标题（英文）</label>
+    <input type="text" id="titleInput" placeholder="例如：Fun at the Zoo、My Happy Park">
+    <br>
+    <label>单词数量：<span id="wordCountLabel">12</span> 个</label>
+    <input type="range" id="wordCount" min="6" max="20" value="12" oninput="document.getElementById('wordCountLabel').textContent=this.value" style="width:100%;accent-color:var(--accent)">
+    <div style="display:flex;justify-content:space-between;font-size:.78em;color:var(--text2)"><span>6 个（精简）</span><span>20 个（丰富）</span></div>
+    <br>
+    <label>孩子年龄</label>
+    <div class="model-select" id="ageSelect">
+      <div class="model-option active" onclick="pickAge(this,'2-4')">
+        <div class="model-name">2-4 岁</div>
+        <div class="model-desc">看图认物 · 超短句</div>
+      </div>
+      <div class="model-option" onclick="pickAge(this,'4-6')">
+        <div class="model-name">4-6 岁</div>
+        <div class="model-desc">学单词 · 简单句</div>
+      </div>
+      <div class="model-option" onclick="pickAge(this,'6-9')">
+        <div class="model-name">6-9 岁</div>
+        <div class="model-desc">学句子 · 完整表达</div>
+      </div>
+    </div>
+    <br>
+    <label>画风</label>
+    <div class="model-select" id="styleSelect">
+      <div class="model-option active" onclick="pickStyle(this,'cartoon')">
+        <div class="model-name">卡通绘本</div>
+        <div class="model-desc">圆润可爱</div>
+      </div>
+      <div class="model-option" onclick="pickStyle(this,'watercolor')">
+        <div class="model-name">水彩风</div>
+        <div class="model-desc">柔和温馨</div>
+      </div>
+      <div class="model-option" onclick="pickStyle(this,'line')">
+        <div class="model-name">简笔画</div>
+        <div class="model-desc">线条清晰</div>
+      </div>
+      <div class="model-option" onclick="pickStyle(this,'3d')">
+        <div class="model-name">3D 卡通</div>
+        <div class="model-desc">立体生动</div>
+      </div>
+      <div class="model-option" onclick="pickStyle(this,'chinese')">
+        <div class="model-name">中国风</div>
+        <div class="model-desc">水墨韵味</div>
+      </div>
+    </div>
+    <hr class="section-divider">
+    <label>选择图片生成模型</label>
+    <div class="model-select" id="modelSelect">
+      <div class="model-option active" onclick="pickModel(this,'gpt-image-2-text-to-image')">
+        <div class="model-name">GPT Image 2</div>
+        <div class="model-desc">文字渲染更准确（推荐）</div>
+      </div>
+      <div class="model-option" onclick="pickModel(this,'nano-banana-pro')">
+        <div class="model-name">Nano Banana Pro</div>
+        <div class="model-desc">支持参考图输入</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Generate Vocab -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">2</span> 生成词汇表</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="genVocabBtn" onclick="generateVocab()">生成词汇</button>
+    </div>
+    <div class="loading" id="vocabLoading"><span class="spinner"></span>正在通过 DeepSeek 生成词汇表……</div>
+    <div id="vocabArea"></div>
+    <!-- Batch queue -->
+    <div id="batchSection" class="hidden">
+      <div class="batch-queue">
+        <div class="batch-queue-title">生成队列</div>
+        <div id="batchList"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="batchGenBtn" onclick="startBatchGen()" disabled>一键批量生成</button>
+        <button class="btn btn-outline" onclick="clearBatch()">清空队列</button>
+      </div>
+      <div class="loading" id="batchLoading"><span class="spinner"></span><span id="batchStatus">正在批量生成中……</span></div>
+      <div id="batchResults"></div>
+    </div>
+  </div>
+
+  <!-- Step 3: Generate Image -->
+  <div class="card" id="step3Card">
+    <div class="card-title"><span class="step-badge">3</span> 生成小报图片</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="genImgBtn" onclick="generateImage()" disabled>生成小报</button>
+    </div>
+    <div class="loading" id="imgLoading"><span class="spinner"></span><span id="imgStatus">正在生成图片，请耐心等待（通常需要 30-90 秒）……</span></div>
+    <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill"></div></div>
+    <div id="resultArea"></div>
+  </div>
+</div>
+
+<script>
+// ---- State ----
+let selectedModel = 'gpt-image-2-text-to-image';
+let selectedAge = '2-4';
+let selectedStyle = 'cartoon';
+let currentMode = 'single';
+let vocabList = [];
+let batchQueue = [];
+let lastImgUrl = '';
+
+// ---- TTS ----
+function speak(text, lang) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang || 'en-US';
+  u.rate = 0.8;
+  u.pitch = 1.1;
+  speechSynthesis.speak(u);
+}
+
+// ---- Init ----
+(function init() {
+  const dk = localStorage.getItem('deepseekKey') || 'sk-96bb50790fbf4c6f87198e5d0738a870';
+  const kk = localStorage.getItem('kieKey') || '42c21299fc3761b75dc72b9e51d4cede';
+  document.getElementById('deepseekKey').value = dk;
+  document.getElementById('kieKey').value = kk;
+  document.getElementById('deepseekKey').addEventListener('change', function() {
+    localStorage.setItem('deepseekKey', this.value);
+  });
+  document.getElementById('kieKey').addEventListener('change', function() {
+    localStorage.setItem('kieKey', this.value);
+  });
+})();
+
+// ---- Helpers ----
+function toggleKeys() {
+  const s = document.getElementById('keysSection');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+}
+function toggleVis(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function setMode(el, mode) {
+  currentMode = mode;
+  el.parentElement.querySelectorAll('.model-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('batchHint').classList.toggle('hidden', mode === 'single');
+  document.getElementById('batchSection').classList.toggle('hidden', mode === 'single');
+  document.getElementById('step3Card').classList.toggle('hidden', mode === 'batch');
+  // Clear all selections
+  document.querySelectorAll('.quick-themes button').forEach(b => {
+    b.classList.remove('active', 'batch-selected');
+  });
+  if (mode === 'single') { batchQueue = []; renderBatchList(); }
+}
+
+function handleThemeClick(btn, theme, title) {
+  if (currentMode === 'single') {
+    pickTheme(btn, theme, title);
+  } else {
+    toggleBatchItem(btn, theme, title);
+  }
+}
+
+function pickTheme(btn, theme, title) {
+  document.getElementById('themeInput').value = theme;
+  document.getElementById('titleInput').value = title;
+  document.querySelectorAll('.quick-themes button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function toggleBatchItem(btn, theme, title) {
+  const idx = batchQueue.findIndex(q => q.theme === theme);
+  if (idx >= 0) {
+    batchQueue.splice(idx, 1);
+    btn.classList.remove('batch-selected');
+  } else {
+    batchQueue.push({ theme, title, status: 'pending', vocab: null, imgUrl: null });
+    btn.classList.add('batch-selected');
+  }
+  renderBatchList();
+}
+
+function pickModel(el, model) {
+  selectedModel = model;
+  document.querySelectorAll('#modelSelect .model-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+}
+function pickAge(el, age) {
+  selectedAge = age;
+  document.querySelectorAll('#ageSelect .model-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+}
+function pickStyle(el, style) {
+  selectedStyle = style;
+  document.querySelectorAll('#styleSelect .model-option').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ---- Build DeepSeek Prompt ----
+function buildDeepseekPrompt(wordCount) {
+  const styleDesc = {
+    'cartoon': 'Children\'s picture book style, cute cartoon illustrations with rounded lines',
+    'watercolor': 'Soft watercolor illustration style, warm pastel tones, artistic and gentle',
+    'line': 'Clean simple line drawing style, minimalist black outlines with flat colors, coloring book feel',
+    '3d': '3D cartoon Pixar-style render, vibrant colors, soft lighting, rounded shapes',
+    'chinese': 'Chinese ink wash painting style, traditional oriental art, elegant and cultural'
+  };
+
+  return `你是一个儿童英语启蒙词汇专家。根据用户给的主题，生成 ${wordCount} 个适合 ${selectedAge} 岁儿童的英语启蒙词汇。
+
+核心要求：
+1. 单词简单常见、具象，优先名词，可少量动词或形容词
+2. 与主题高度相关，覆盖人物、动物、物品、环境等
+3. 每个词必须提供国际音标（IPA），便于家长教发音
+
+【适龄要求】当前目标年龄：${selectedAge} 岁
+${selectedAge === '2-4' ? `- 这个阶段重点：看图认物、听音辨物
+- 单词选择：只用最基础、最直观的词（如 apple, dog, cat, ball, car）
+- 句子长度：3-4 个英文单词，越短越好
+- 句型以 I see / This is 为主，少用复杂句型` : selectedAge === '4-6' ? `- 这个阶段重点：学单词、读简单句
+- 单词选择：基础词汇为主，可加入少量 2 音节词（如 banana, elephant, monkey）
+- 句子长度：4-6 个英文单词
+- 可使用 I see / This is / I like / The ... is 等句型` : `- 这个阶段重点：学句子、完整表达
+- 单词选择：可加入稍难的词和少量动词、形容词（如 beautiful, running, jumping, delicious）
+- 句子长度：5-8 个英文单词
+- 可使用 I see / This is / I like / I have / The ... can / I love my / Let's 等句型`}
+
+【关键】句子必须按句型分组，每组用同一个句型，形成系统化教学节奏。根据总数量合理分配。
+
+可选句型（根据单词特点选择最合适的句型，不要硬套）：
+- "I see a/an ..." → 适合物品、动物 → 例：I see a bird.
+- "This is a/an ..." → 适合物品、人物介绍 → 例：This is my daddy.
+- "The ... is + 形容词" → 适合描述特征 → 例：The apple is red. 形容词要多样
+- "I like ..." → 适合喜好表达 → 例：I like bananas.
+- "I have a/an ..." → 适合拥有/身边的东西 → 例：I have a brother.
+- "The ... can + 动词" → 适合动物、动作 → 例：The fish can swim.
+- "I love my ..." → 适合家人、亲近的人/物 → 例：I love my mommy.
+- "Let's ..." → 适合动作、活动 → 例：Let's play together.
+
+【最重要】句子必须自然、符合生活逻辑！以下情况绝对禁止：
+- 不要说 "I see a daddy/mommy/grandma" — 不会这样"看见"家人
+- 不要说 "This is a water/rice" — 不可数名词不用 a/an
+- 不要说 "The daddy is big" — 描述家人不用这种方式
+- 每个句子的场景要像真实亲子对话，像妈妈在教孩子说话
+
+如果总数较少（如6-8个），只用2-3个句型组；如果较多（如15-20个），用4-5个句型组。
+
+每组内单词不同，但句型一致。不要混用句型，不要随机分配。
+
+严格按以下 JSON 格式返回，不要返回其他内容：
+{"words":[{"en":"apple","cn":"苹果","phonetic":"/ˈæp.əl/","sentence":"I see an apple.","sentence_cn":"我看到一个苹果。","pattern":"I see"},{"en":"banana","cn":"香蕉","phonetic":"/bəˈnæn.ə/","sentence":"This is a banana.","sentence_cn":"这是一根香蕉。","pattern":"This is"},...]}`;
+}
+
+// ---- Step 2: Generate Vocabulary via DeepSeek ----
+async function generateVocab(themeOverride, titleOverride) {
+  const theme = (themeOverride || document.getElementById('themeInput').value).trim();
+  const title = (titleOverride || document.getElementById('titleInput').value).trim();
+  if (!theme || !title) { alert('请先输入主题和标题'); return; }
+
+  const apiKey = document.getElementById('deepseekKey').value.trim();
+  if (!apiKey) { alert('请配置 DeepSeek API Key'); return; }
+
+  const wordCount = parseInt(document.getElementById('wordCount').value) || 12;
+  const btn = document.getElementById('genVocabBtn');
+  const loading = document.getElementById('vocabLoading');
+
+  if (!themeOverride) { btn.disabled = true; loading.classList.add('show'); }
+
+  const systemPrompt = buildDeepseekPrompt(wordCount);
+
+  try {
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: '主题：' + theme }
+        ],
+        temperature: 0.7
+      })
+    });
+    if (!res.ok) throw new Error('DeepSeek API 错误：' + res.status);
+    const data = await res.json();
+    let content = data.choices[0].message.content.trim();
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('无法解析词汇数据');
+    const parsed = JSON.parse(jsonMatch[0]);
+    const words = parsed.words || [];
+
+    if (!themeOverride) {
+      vocabList = words;
+      renderVocab();
+      document.getElementById('genImgBtn').disabled = false;
+    }
+    return words;
+  } catch (e) {
+    if (!themeOverride) alert('词汇生成失败：' + e.message);
+    else throw e;
+  } finally {
+    if (!themeOverride) { btn.disabled = false; loading.classList.remove('show'); }
+  }
+}
+
+function renderVocab() {
+  const area = document.getElementById('vocabArea');
+  if (!vocabList.length) { area.innerHTML = ''; return; }
+  let html = '<div style="font-size:.78em;color:var(--text2);text-align:center;margin-bottom:8px">点击单词或句子可听发音</div>';
+  html += '<div class="vocab-grid">';
+  vocabList.forEach((w, i) => {
+    html += `<div class="vocab-item">
+      <button class="vocab-delete" onclick="removeVocab(${i})" title="删除">×</button>
+      <div><span class="vocab-word" onclick="speak('${escAttr(w.en)}','en-US')">${escHtml(w.en)}</span><span class="vocab-phonetic">${escHtml(w.phonetic || '')}</span><span class="vocab-speak-hint">🔊</span></div>
+      <div class="vocab-cn">${escHtml(w.cn)}</div>
+      <div class="vocab-sentence" onclick="speak('${escAttr(w.sentence)}','en-US')">${escHtml(w.sentence)}</div>
+      <div class="vocab-sentence-cn">${escHtml(w.sentence_cn)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+function removeVocab(i) {
+  vocabList.splice(i, 1);
+  renderVocab();
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+function escAttr(s) {
+  return s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// ---- Batch ----
+function renderBatchList() {
+  const list = document.getElementById('batchList');
+  if (!batchQueue.length) {
+    list.innerHTML = '<div style="font-size:.85em;color:var(--text2)">队列空，请点击上方主题按钮添加</div>';
+    document.getElementById('batchGenBtn').disabled = true;
+    return;
+  }
+  document.getElementById('batchGenBtn').disabled = false;
+  let html = '';
+  batchQueue.forEach((q, i) => {
+    const statusText = { pending: '待生成', generating: '生成中', done: '已完成', fail: '失败' };
+    html += `<div class="batch-item">
+      <span style="flex:1">${escHtml(q.theme)} — ${escHtml(q.title)}</span>
+      <span class="batch-status ${q.status}">${statusText[q.status] || '待生成'}</span>
+      <button class="batch-remove" onclick="removeBatchItem(${i})" title="移除">×</button>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function removeBatchItem(i) {
+  const q = batchQueue[i];
+  document.querySelectorAll('.quick-themes button').forEach(b => {
+    if (b.textContent.trim() === q.theme) b.classList.remove('batch-selected');
+  });
+  batchQueue.splice(i, 1);
+  renderBatchList();
+}
+
+function clearBatch() {
+  batchQueue = [];
+  document.querySelectorAll('.quick-themes button').forEach(b => b.classList.remove('batch-selected'));
+  renderBatchList();
+  document.getElementById('batchResults').innerHTML = '';
+}
+
+async function startBatchGen() {
+  const kieKey = document.getElementById('kieKey').value.trim();
+  const dsKey = document.getElementById('deepseekKey').value.trim();
+  if (!kieKey || !dsKey) { alert('请配置 API Key'); return; }
+  if (!batchQueue.length) return;
+
+  const btn = document.getElementById('batchGenBtn');
+  const loading = document.getElementById('batchLoading');
+  const statusEl = document.getElementById('batchStatus');
+  btn.disabled = true;
+  loading.classList.add('show');
+
+  const wordCount = parseInt(document.getElementById('wordCount').value) || 12;
+  let resultsHtml = '';
+
+  for (let i = 0; i < batchQueue.length; i++) {
+    const q = batchQueue[i];
+    if (q.status === 'done') continue;
+    q.status = 'generating';
+    renderBatchList();
+    statusEl.textContent = `正在生成第 ${i + 1}/${batchQueue.length} 个：${q.theme}……`;
+
+    try {
+      // Generate vocab
+      const words = await generateVocab(q.theme, q.title);
+      if (!words || !words.length) throw new Error('词汇生成失败');
+
+      // Generate image
+      const prompt = buildPrompt(q.theme, q.title, words);
+      const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + kieKey },
+        body: JSON.stringify({
+          model: selectedModel,
+          input: { prompt, aspect_ratio: '3:4', resolution: '4K', output_format: 'png' }
+        })
+      });
+      const createData = await createRes.json();
+      if (createData.code !== 200) throw new Error(createData.msg || '创建任务失败');
+      const taskId = createData.data.taskId;
+
+      // Poll
+      let imgUrl = null;
+      for (let t = 0; t < 60; t++) {
+        await new Promise(r => setTimeout(r, 3000));
+        const pollRes = await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId, {
+          headers: { 'Authorization': 'Bearer ' + kieKey }
+        });
+        if (!pollRes.ok) continue;
+        const pollData = await pollRes.json();
+        if (pollData.data && pollData.data.state === 'success') {
+          const result = JSON.parse(pollData.data.resultJson);
+          imgUrl = result.resultUrls && result.resultUrls[0];
+          break;
+        } else if (pollData.data && pollData.data.state === 'fail') {
+          throw new Error(pollData.data.failMsg || '图片生成失败');
+        }
+      }
+      if (!imgUrl) throw new Error('生成超时');
+
+      q.status = 'done';
+      q.imgUrl = imgUrl;
+      q.vocab = words;
+      renderBatchList();
+
+      // Show result
+      resultsHtml += buildResultCard(q.theme, q.title, imgUrl, words);
+      document.getElementById('batchResults').innerHTML = resultsHtml;
+    } catch (e) {
+      q.status = 'fail';
+      renderBatchList();
+      resultsHtml += `<div style="background:#FFEBEE;border-radius:10px;padding:16px;margin:12px 0">
+        <strong>${escHtml(q.theme)}</strong> 生成失败：${escHtml(e.message)}
+      </div>`;
+      document.getElementById('batchResults').innerHTML = resultsHtml;
+    }
+  }
+
+  statusEl.textContent = '批量生成完成！';
+  btn.disabled = false;
+  loading.classList.remove('show');
+}
+
+function buildResultCard(theme, title, imgUrl, words) {
+  const groups = {};
+  words.forEach(w => {
+    const p = w.pattern || guessPattern(w.sentence);
+    if (!groups[p]) groups[p] = [];
+    groups[p].push(w);
+  });
+
+  let captionHtml = '';
+  for (const [pattern, ws] of Object.entries(groups)) {
+    captionHtml += `<div style="margin-bottom:12px">
+      <div style="font-weight:700;color:var(--accent);margin-bottom:6px;font-size:.9em">句型：${escHtml(pattern)} ...</div>
+      <div class="caption-list">`;
+    ws.forEach(w => {
+      captionHtml += `<div class="caption-item">
+        <span class="caption-en" onclick="speak('${escAttr(w.en)}','en-US')">${escHtml(w.en)}</span><span class="caption-phonetic">${escHtml(w.phonetic || '')}</span><span class="speak-hint">点击发音</span> <span class="caption-cn">${escHtml(w.cn)}</span>
+        <div class="caption-sentence" onclick="speak('${escAttr(w.sentence)}','en-US')">${escHtml(w.sentence)}</div>
+        <div class="caption-sentence-cn">${escHtml(w.sentence_cn)}</div>
+      </div>`;
+    });
+    captionHtml += '</div></div>';
+  }
+
+  return `<div style="border:2px solid #E8E8E8;border-radius:16px;padding:20px;margin:20px 0;background:#fff">
+    <h3 style="color:var(--accent);text-align:center;margin-bottom:12px">《${escHtml(title)}》— ${escHtml(theme)}</h3>
+    <img src="${imgUrl}" class="result-img" alt="${escHtml(theme)}">
+    <div class="btn-row" style="margin-top:12px">
+      <a href="${imgUrl}" download="poster-${Date.now()}.png" class="btn btn-primary" target="_blank">下载</a>
+      <button class="btn btn-outline" onclick="printPoster('${imgUrl}','${escAttr(title)}','${escAttr(theme)}')">打印</button>
+    </div>
+    <div class="caption-section">
+      <div class="caption-title">《${escHtml(title)}》— ${escHtml(theme)} 配文词卡</div>
+      ${captionHtml}
+    </div>
+  </div>`;
+}
+
+// ---- Step 3: Generate Image via kie.ai ----
+async function generateImage() {
+  const theme = document.getElementById('themeInput').value.trim();
+  const title = document.getElementById('titleInput').value.trim();
+  if (!vocabList.length) { alert('请先生成词汇表'); return; }
+
+  const apiKey = document.getElementById('kieKey').value.trim();
+  if (!apiKey) { alert('请配置 kie.ai API Key'); return; }
+
+  const btn = document.getElementById('genImgBtn');
+  const loading = document.getElementById('imgLoading');
+  const statusEl = document.getElementById('imgStatus');
+  const progressBar = document.getElementById('progressBar');
+  const progressFill = document.getElementById('progressFill');
+
+  btn.disabled = true;
+  loading.classList.add('show');
+  progressBar.style.display = 'block';
+  progressFill.style.width = '5%';
+  statusEl.textContent = '正在提交生成任务……';
+  document.getElementById('resultArea').innerHTML = '';
+
+  const prompt = buildPrompt(theme, title, vocabList);
+
+  try {
+    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: selectedModel,
+        input: { prompt, aspect_ratio: '3:4', resolution: '4K', output_format: 'png' }
+      })
+    });
+    if (!createRes.ok) throw new Error('创建任务失败：' + createRes.status);
+    const createData = await createRes.json();
+    if (createData.code !== 200) throw new Error('创建任务失败：' + (createData.msg || '未知错误'));
+    const taskId = createData.data.taskId;
+    statusEl.textContent = '任务已提交，等待生成中……';
+
+    let elapsed = 0;
+    const maxWait = 300;
+    while (elapsed < maxWait) {
+      await new Promise(r => setTimeout(r, 3000));
+      elapsed += 3;
+      progressFill.style.width = Math.min(90, 5 + (elapsed / maxWait) * 85) + '%';
+      statusEl.textContent = `正在生成图片……已等待 ${elapsed} 秒`;
+
+      const pollRes = await fetch('https://api.kie.ai/api/v1/jobs/recordInfo?taskId=' + taskId, {
+        headers: { 'Authorization': 'Bearer ' + apiKey }
+      });
+      if (!pollRes.ok) continue;
+      const pollData = await pollRes.json();
+      if (pollData.data && pollData.data.state === 'success') {
+        const result = JSON.parse(pollData.data.resultJson);
+        const imgUrl = result.resultUrls && result.resultUrls[0];
+        if (!imgUrl) throw new Error('未获取到图片地址');
+        progressFill.style.width = '100%';
+        statusEl.textContent = '生成完成！';
+        lastImgUrl = imgUrl;
+        showResult(imgUrl, theme, title);
+        break;
+      } else if (pollData.data && pollData.data.state === 'fail') {
+        throw new Error('图片生成失败：' + (pollData.data.failMsg || '未知错误'));
+      }
+    }
+    if (elapsed >= maxWait) throw new Error('等待超时，请稍后手动查询');
+  } catch (e) {
+    alert('图片生成失败：' + e.message);
+  } finally {
+    btn.disabled = false;
+    loading.classList.remove('show');
+    progressBar.style.display = 'none';
+  }
+}
+
+function showResult(url, theme, title) {
+  theme = theme || document.getElementById('themeInput').value.trim();
+  title = title || document.getElementById('titleInput').value.trim();
+  document.getElementById('resultArea').innerHTML = buildResultCard(theme, title, url, vocabList);
+}
+
+// ---- Print ----
+function printPoster(imgUrl, title, theme) {
+  const words = vocabList;
+  const groups = {};
+  words.forEach(w => {
+    const p = w.pattern || guessPattern(w.sentence);
+    if (!groups[p]) groups[p] = [];
+    groups[p].push(w);
+  });
+
+  let captionRows = '';
+  let wordNum = 0;
+  for (const [pattern, ws] of Object.entries(groups)) {
+    captionRows += `<tr><td colspan="4" style="font-weight:bold;color:#FF8C42;padding:8px 4px 4px;font-size:14px">句型：${escHtml(pattern)} ...</td></tr>`;
+    ws.forEach(w => {
+      wordNum++;
+      captionRows += `<tr style="border-bottom:1px solid #eee">
+        <td style="padding:6px 8px;font-weight:bold;color:#FF8C42;font-size:16px">${escHtml(w.en)}</td>
+        <td style="padding:6px 8px;font-size:13px;color:#4ECDC4;font-style:italic">${escHtml(w.phonetic || '')}</td>
+        <td style="padding:6px 8px;font-size:14px">${escHtml(w.cn)}</td>
+        <td style="padding:6px 8px;font-size:14px;color:#4ECDC4">${escHtml(w.sentence)}<br><span style="font-size:12px;color:#999">${escHtml(w.sentence_cn)}</span></td>
+      </tr>`;
+    });
+  }
+
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>打印 — ${title}</title>
+<style>
+  @page{size:A4;margin:15mm}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#333;line-height:1.5}
+  h1{text-align:center;color:#FF8C42;margin:0 0 10px;font-size:22px}
+  h2{text-align:center;color:#666;font-size:14px;margin:0 0 12px;font-weight:normal}
+  img{width:100%;max-width:500px;display:block;margin:0 auto 12px;border-radius:8px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  @media print{.no-print{display:none}}
+</style></head><body>
+<h1>${title}</h1>
+<h2>${theme}</h2>
+<img src="${imgUrl}" alt="poster">
+<table>${captionRows}</table>
+<div class="no-print" style="text-align:center;margin-top:20px">
+  <button onclick="window.print()" style="padding:10px 30px;font-size:16px;border:none;border-radius:8px;background:#FF8C42;color:#fff;cursor:pointer">打印</button>
+</div>
+</body></html>`);
+  w.document.close();
+}
+
+function guessPattern(sentence) {
+  const s = sentence.trim();
+  if (/^I see/i.test(s)) return 'I see';
+  if (/^This is/i.test(s)) return 'This is';
+  if (/^I like/i.test(s)) return 'I like';
+  if (/^I have/i.test(s)) return 'I have';
+  if (/^I love/i.test(s)) return 'I love my';
+  if (/^Let/i.test(s)) return "Let's";
+  if (/^The \w+ is/i.test(s)) return 'The ... is';
+  if (/^It is/i.test(s)) return 'It is';
+  if (/can/i.test(s)) return '... can ...';
+  return s.split(' ').slice(0, 2).join(' ');
+}
+
+function buildPrompt(theme, title, words) {
+  const styleMap = {
+    'cartoon': "Children's picture book style, cute cartoon illustrations with rounded lines, bright warm cheerful colors, pastel background, clean rounded lines, vector illustration feel",
+    'watercolor': "Soft watercolor illustration style, warm pastel tones, artistic and gentle washes, dreamy and cozy atmosphere, hand-painted feel",
+    'line': "Clean simple line drawing style, minimalist black outlines with flat pastel colors, coloring book feel, clear and easy to recognize shapes",
+    '3d': "3D cartoon Pixar-style render, vibrant saturated colors, soft lighting, smooth rounded 3D shapes, toy-like appearance",
+    'chinese': "Chinese ink wash painting style (水墨风), traditional oriental art aesthetics, elegant brushstrokes, rice paper texture background, cultural and artistic"
+  };
+
+  let wordEntries = '';
+  words.forEach((w, i) => {
+    wordEntries += `${i + 1}. ${w.en} (${w.phonetic || ''}) ${w.cn} — "${w.sentence}"\n`;
+  });
+
+  // Group sentences by pattern for bottom section
+  const groups = {};
+  words.forEach(w => {
+    const p = w.pattern || guessPattern(w.sentence);
+    if (!groups[p]) groups[p] = [];
+    groups[p].push(w);
+  });
+  let sentenceGroups = '';
+  for (const [pattern, ws] of Object.entries(groups)) {
+    sentenceGroups += `* "${pattern} ..." group: ${ws.map(w => `"${w.sentence}"`).join(', ')}\n`;
+  }
+
+  return `Generate a children's English vocabulary learning poster.
+
+Title: "${title}" (large, centered at top, cute rounded font)
+Theme: ${theme}
+
+LAYOUT RULES (very important):
+- Portrait A4 poster, clean and spacious layout
+- Title at top center with small decorative stickers related to ${theme}
+- Below the title, arrange exactly ${words.length} vocabulary cards in a neat 3-column grid (or 2-column on narrow space)
+- Each card is a rounded-corner white card with soft shadow, containing:
+  * A cute illustration of the object (large, centered)
+  * English word below the illustration (large, bold, rounded font)
+  * Phonetics below the word (smaller, italic)
+  * Chinese meaning below phonetics (small)
+- At the bottom, show sentences grouped by pattern:
+${sentenceGroups}
+
+WORDS TO DRAW:
+${wordEntries}
+
+STYLE: ${styleMap[selectedStyle] || styleMap['cartoon']}
+
+AGE GROUP: ${selectedAge} years old
+- Each object must be clearly recognizable for a ${selectedAge === '2-4' ? '2' : selectedAge === '4-6' ? '4' : '6'}-year-old
+- Lots of white space between cards — do NOT crowd the layout
+- Font must be large and easy to read
+- No dark or scary elements
+
+IMPORTANT:
+- Keep the layout clean with plenty of spacing
+- Maximum ${words.length} items — do not add extra items
+- Every word must be spelled correctly
+- Each illustration should be simple and iconic`;
+}
+</script>
+</body>
+</html>
