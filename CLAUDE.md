@@ -1,5 +1,9 @@
 # CLAUDE.md — 项目上下文文档
 
+## GitHub 仓库
+
+https://github.com/keselychen-dev/kids-english-vocab-poster
+
 ## 项目简介
 
 这是一个**儿童英语启蒙识词小报生成器**，面向 2-9 岁儿童的家长/老师。用户输入一个主题（如动物园、水果），工具会自动生成一张带英语词汇、音标、例句的卡通小报图片，附带配文词卡。
